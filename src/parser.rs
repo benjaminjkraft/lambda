@@ -99,34 +99,34 @@ fn type_parser<'src: 'tok, 'tok>(
 }
 
 #[cfg(test)]
-fn type_must_parse<'src>(input: &'src str) -> Type {
+pub fn must_parse_type<'src>(input: &'src str) -> Type {
     let tokens = lexer().parse(input).unwrap();
     let type_ = type_parser().parse(&tokens).unwrap();
     type_
 }
 
 #[cfg(test)]
-fn type_must_err<'src>(input: &'src str) {
+fn type_parse_error<'src>(input: &'src str) {
     let tokens = lexer().parse(input).unwrap();
     assert!(type_parser().parse(&tokens).has_errors())
 }
 
 #[test]
 fn test_type_parser() {
-    assert_eq!(type_must_parse("bool"), Type::Bool);
-    type_must_err("bogus");
-    type_must_err("()");
-    type_must_err("bool bool");
-    assert_eq!(type_must_parse("((bool))"), Type::Bool);
+    assert_eq!(must_parse_type("bool"), Type::Bool);
+    type_parse_error("bogus");
+    type_parse_error("()");
+    type_parse_error("bool bool");
+    assert_eq!(must_parse_type("((bool))"), Type::Bool);
     assert_eq!(
-        type_must_parse("bool -> bool"),
+        must_parse_type("bool -> bool"),
         Type::Func {
             param: Box::new(Type::Bool),
             ret: Box::new(Type::Bool),
         }
     );
     assert_eq!(
-        type_must_parse("bool -> bool -> bool"),
+        must_parse_type("bool -> bool -> bool"),
         Type::Func {
             param: Box::new(Type::Bool),
             ret: Box::new(Type::Func {
@@ -136,7 +136,7 @@ fn test_type_parser() {
         }
     );
     assert_eq!(
-        type_must_parse("(bool -> bool) -> bool"),
+        must_parse_type("(bool -> bool) -> bool"),
         Type::Func {
             param: Box::new(Type::Func {
                 param: Box::new(Type::Bool),
@@ -187,7 +187,7 @@ fn parser<'src: 'tok, 'tok>(
     })
 }
 
-pub fn must_parse<'src>(input: &'src str) -> Expr<'src> {
+pub fn must_parse(input: &str) -> Expr<'_> {
     let tokens = lexer().parse(input).unwrap();
     let expr = parser().parse(&tokens).unwrap();
     expr
@@ -291,6 +291,18 @@ fn test_parser() {
             body: Box::new(Expr::Apply {
                 func: Box::new(Expr::Var("e")),
                 arg: Box::new(Expr::Var("f")),
+            }),
+        },
+    );
+    assert_eq!(
+        must_parse("\\x: bool. \\y: bool. x"),
+        Expr::Lambda {
+            param: "x",
+            type_: Box::new(Type::Bool),
+            body: Box::new(Expr::Lambda {
+                param: "y",
+                type_: Box::new(Type::Bool),
+                body: Box::new(Expr::Var("x")),
             }),
         },
     );
